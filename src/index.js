@@ -4,6 +4,7 @@ const http = require('http');
 const cors = require('cors');
 const morgan = require('morgan');
 
+
 const connectMongo = require('./lib/db');
 const initSocket = require('./realtime/socket');
 
@@ -30,12 +31,15 @@ app.use('/chats', chatRoutes);
 app.use('/messages', messageRoutes);
 app.use('/media', mediaRoutes);
 
-// app.get('/', (_, res) => {
-//   res.send('<h1>🚀 Server is running successfully!</h1>');
-// });
+
 
 const PORT = process.env.PORT || 4000;
+
+app.get("/", (req, res) => {
+  res.send("Backend is live 🚀");
+});
+
 (async () => {
   await connectMongo();
-  server.listen(PORT, () => console.log(`[api] http://localhost:${PORT}`));
+
 })();
