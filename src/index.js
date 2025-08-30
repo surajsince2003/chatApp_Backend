@@ -39,7 +39,11 @@ app.get("/", (req, res) => {
   res.send("Backend is live 🚀");
 });
 
+
 (async () => {
   await connectMongo();
 
+  server.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+  });
 })();
