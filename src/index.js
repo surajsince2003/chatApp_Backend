@@ -30,6 +30,10 @@ app.use('/chats', chatRoutes);
 app.use('/messages', messageRoutes);
 app.use('/media', mediaRoutes);
 
+// app.get('/', (_, res) => {
+//   res.send('<h1>🚀 Server is running successfully!</h1>');
+// });
+
 const PORT = process.env.PORT || 4000;
 (async () => {
   await connectMongo();

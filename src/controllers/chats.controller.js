@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Chat = require('../models/Chat');
 const User = require('../models/User');
+const ChatMeta = require('../models/ChatMeta');
 
 const isValidId = (id) => mongoose.isValidObjectId(id);
 
@@ -41,14 +42,48 @@ exports.listMyChats = async (req, res) => {
     },
     { $lookup: { from: 'users', localField: 'otherId', foreignField: '_id', as: 'peer' } },
     { $unwind: '$peer' },
-    { $project: {
-        _id: 1, lastMessage: 1, lastMessageAt: 1,
-        peer: { _id: '$peer._id', username: '$peer.username', name: '$peer.name', avatarUrl: '$peer.avatarUrl' }
+    // join ChatMeta for current user
+    { $lookup: {
+        from: 'chatmetas', let: { chatId: '$_id' },
+        pipeline: [
+          { $match: { $expr: { $and: [{ $eq: ['$chatId', '$$chatId'] }, { $eq: ['$userId', me] }] } } },
+          { $limit: 1 }
+        ],
+        as: 'meta'
       }
     },
-    { $sort: { lastMessageAt: -1, _id: -1 } }
+    { $addFields: { meta: { $first: '$meta' } } },
+    { $project: {
+        _id: 1, lastMessage: 1, lastMessageAt: 1,
+        peer: { _id: '$peer._id', username: '$peer.username', name: '$peer.name', avatarUrl: '$peer.avatarUrl' },
+        pinned: '$meta.pinned'
+      }
+    },
+    { $sort: { pinned: -1, lastMessageAt: -1, _id: -1 } }
   ]);
+
   res.json(list.map(c => ({ ...c, lastMessagePreview: c.lastMessage || 'Start chatting…' })));
+};
+
+
+exports.pin = async (req, res) => {
+  const { chatId } = req.params;
+  await ChatMeta.updateOne(
+    { chatId, userId: req.userId },
+    { $set: { pinned: true } },
+    { upsert: true }
+  );
+  res.json({ ok: true });
+};
+
+exports.unpin = async (req, res) => {
+  const { chatId } = req.params;
+  await ChatMeta.updateOne(
+    { chatId, userId: req.userId },
+    { $set: { pinned: false } },
+    { upsert: true }
+  );
+  res.json({ ok: true });
 };
 
 exports.getOrCreateByUsername = async (req, res) => {
@@ -75,3 +110,6 @@ exports.getOrCreateByUsername = async (req, res) => {
     peer
   });
 };
+
+
+
